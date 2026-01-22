@@ -6,7 +6,7 @@ User = get_user_model()
 
 class Venue(models.Model):
     name = models.CharField(max_length=255)
-    latitede = models.FloatField() #широта
+    latitude = models.FloatField() #широта
     longitude = models.FloatField() #долгота
 
     def __str__(self):

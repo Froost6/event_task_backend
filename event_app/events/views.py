@@ -1,20 +1,39 @@
-from django.shortcuts import render
-from rest_framework import viewsets
+import django_filters
+from rest_framework import viewsets, filters
 from .models import Venue, Event
-from .serializers import VenueSerializer, EventSerializer, EventImageSerializer
-from rest_framework.permissions import IsAdminUser
+from .serializers import VenueSerializer, EventSerializer
+from .filters import EventFilter
+from rest_framework.filters import SearchFilter, OrderingFilter
+from .permissions import IsAdminReadOnly
+from .pagination import TestPagination
 
 class VenueViewSet(viewsets.ModelViewSet):
     queryset = Venue.objects.all()
     serializer_class = VenueSerializer
 
 class EventViewSet(viewsets.ModelViewSet):
-    queryset = Event.objects.all()
     serializer_class = EventSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminReadOnly]
+    pagination_class = TestPagination
+
+    filter_backends = (
+        django_filters.rest_framework.DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    )
+
+    filterset_class = EventFilter
+    search_fields = ['title', 'venue__name']
+    ordering_fields = ['start_datetime', 'end_datetime', 'rating']
+    ordering = ['start_datetime']
 
     def get_queryset(self):
-        if not self.request.user.is_superuser:
-            return Event.objects.filter(status="PUBLISHED")
-        return Event.objects.all()
+        queryset = Event.objects.all()
 
+        if not self.request.user.is_superuser:
+            queryset = queryset.filter(status='PUBLISHED')
+
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)

@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models import Event, EventImage, Venue
 
 class VenueAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'latitede', 'longitude')
+    list_display = ('id', 'name', 'latitude', 'longitude')
     search_fields = ('name',)
 
 admin.site.register(Venue, VenueAdmin)
