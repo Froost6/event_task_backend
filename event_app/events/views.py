@@ -24,8 +24,8 @@ class EventViewSet(viewsets.ModelViewSet):
 
     filterset_class = EventFilter
     search_fields = ['title', 'venue__name']
-    ordering_fields = ['start_datetime', 'end_datetime', 'rating']
-    ordering = ['start_datetime']
+    ordering_fields = ['start_datetime', 'end_datetime', 'title']
+    ordering = ['title']
 
     def get_queryset(self):
         queryset = Event.objects.all()
