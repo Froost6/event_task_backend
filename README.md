@@ -1,5 +1,10 @@
 ### Документация API проекта "Event_app"
 
+## запуск через докер - docker-compose up --build -d
+просмтр логов - docker-compose logs -f
+остановить контейнер - docker-compose down
+
+
 ## API-ендпоинты
 
 # /admin - панель админа в джанго
