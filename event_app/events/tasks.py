@@ -17,13 +17,31 @@ def send_event_email(subject, message, recipient_list):
     )
 
 @shared_task
-def published_sheduled_events():
+def publish_scheduled_events():
     now = timezone.now()
 
-    events_to_publish = Event.objects.filter(status="DRAFT", published_datetime__lte = now)
+    events_to_publish = Event.objects.filter(status="DRAFT", publish_datetime__lte = now)
+
+    count = 0
     for event in events_to_publish:
         event.status = "PUBLISHED"
         event.save()
+        count += 1
+
+    if count > 0:
+        print(f"Опубликовано {count} событий")
+
+        send_mail(
+            'Celery Task Report: Автопубликация событий',
+            f'Опубликовано {count} событий.\nВремя: {now}',
+            settings.DEFAULT_FROM_EMAIL,
+            [settings.ADMIN_EMAIL],
+            fail_silently=True,
+        )
+    
+    return {"published": count}
+
+
 
 @shared_task
 def update_weather_for_venues():
@@ -31,8 +49,8 @@ def update_weather_for_venues():
     # через сайт с погодой, но потом перечитал задание и понял что мудрю, сделал просто рандомную погоду
 
     directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']
-    events = Event.objects.all()
-    for event in events:
+    venues = Venue.objects.all()
+    for venue in venues:
         weather_data = {
             "temp": round(random.uniform(-5, 35), 1),
             "humidity": random.randint(20, 100),
@@ -40,8 +58,8 @@ def update_weather_for_venues():
             "wind_speed": round(random.uniform(0, 15), 1),
             "wind_dir": random.choice(directions)
         }
-        event.weather = weather_data
-        event.save()
+        venue.weather = weather_data
+        venue.save(update_fields=['weather'])
 
     
 

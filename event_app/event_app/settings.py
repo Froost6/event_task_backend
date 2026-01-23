@@ -54,7 +54,13 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CERERY_TIMEZONE = 'UTC'
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = True
 
+
+DEFAULT_FROM_EMAIL = 'no-reply@example.com'
+EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
+ADMIN_EMAIL = 'testadmin@example.com'
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [

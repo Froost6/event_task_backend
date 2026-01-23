@@ -4,7 +4,7 @@ from .models import Venue, Event, EventImage
 class VenueSerializer(serializers.ModelSerializer):
     class Meta:
         model = Venue
-        fields = ['id','name','latitude','longitude']
+        fields = ['id','name','latitude','longitude','weather']
 
 class EventImageSerializer(serializers.ModelSerializer):
     class Meta:
@@ -23,6 +23,6 @@ class EventSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'desk', 'publish_datetime',
             'start_datetime', 'end_datetime', 'author', 'venue_detail',
-            'venue', 'rating', 'status', 'weather', 'image'
+            'venue', 'rating', 'status', 'image'
         ]
 

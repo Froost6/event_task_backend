@@ -6,7 +6,7 @@ from .serializers import VenueSerializer, EventSerializer
 from .filters import EventFilter
 from rest_framework.filters import SearchFilter, OrderingFilter
 from .permissions import IsAdminReadOnly
-from rest_framework.permissions import IsAdminUser
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from .pagination import TestPagination
 from openpyxl import load_workbook, Workbook
 from datetime import datetime
@@ -54,8 +54,8 @@ class ImportEventsAPIView(APIView):
         if not file:
             return Response({"error":"Файл не передан"}, status=400)
         
-        if not file.name.endswith('.xlxs'):
-            return Response({'detail':'ожидается файл типа xlxs'}, status=400)
+        if not file.name.endswith('.xlsx'):
+            return Response({'detail':'ожидается файл типа xlsx'}, status=400)
         
         try:
             workbook = load_workbook(file)
@@ -67,7 +67,6 @@ class ImportEventsAPIView(APIView):
         if len(rows) < 2:
             return Response({'detail':'файл пуст'}, status=400)
         
-        header = rows[0]
         data_rows = rows[1:]
 
         created_count = 0
@@ -75,6 +74,12 @@ class ImportEventsAPIView(APIView):
 
         for row_index, row in enumerate(data_rows, start=2):
             try:
+                if len(row) < 9:
+                    errors.append({
+                        'row': row_index,
+                        'error': f'Недостаточно колонок в строке (ожидается 9, получено {len(row)})'
+                    })
+                    continue
                 title = row[0]
                 desk = row[1]
                 publish_datetime = row[2]
@@ -83,27 +88,53 @@ class ImportEventsAPIView(APIView):
                 venue_name = row[5]
                 latitude, longitude = map(float, row[6].split(','))
                 rating = int(row[7] or 0)
+                weather = row[8]
 
-                if rating < 0: rating = 0
-                if rating > 25: rating = 25
+                if not title or not venue_name:
+                    continue
 
-                if not isinstance(publish_datetime, datetime):
-                    publish_datetime = datetime.strptime(str(publish_datetime), '%Y-%m-%d %H:%M')
-                if not isinstance(start_datetime, datetime):
-                    start_datetime = datetime.strptime(str(start_datetime), '%Y-%m-%d %H:%M')
-                if not isinstance(end_datetime, datetime):
-                    end_datetime = datetime.strptime(str(end_datetime), '%Y-%m-%d %H:%M')
+                try:
+                    if rating is None or rating == '':
+                        rating = 0
+                    else:
+                        rating = int(rating)
+                except ValueError:
+                    rating = 0
+
+                if rating < 0: 
+                    rating = 0
+                if rating > 25: 
+                    rating = 25
+
+
+
+                try:
+                    if not isinstance(publish_datetime, datetime):
+                        publish_datetime = datetime.strptime(str(publish_datetime), '%Y-%m-%d %H:%M')
+                    if not isinstance(start_datetime, datetime):
+                        start_datetime = datetime.strptime(str(start_datetime), '%Y-%m-%d %H:%M')
+                    if not isinstance(end_datetime, datetime):
+                        end_datetime = datetime.strptime(str(end_datetime), '%Y-%m-%d %H:%M')
+                except ValueError as e:
+                    errors.append({
+                        'row': row_index,
+                        'error': f'Неверный формат даты: {str(e)}'
+                    })
+                    continue
+
 
                 venue, _ = Venue.objects.get_or_create(
                     name=venue_name,
                     defaults={
                         'latitude': latitude,
                         'longitude': longitude,
-                    }
+                        'weather':weather,
+                    },
                 )
 
                 if Event.objects.filter(title=title, start_datetime=start_datetime, venue=venue).exists():
                     continue
+
 
                 Event.objects.create(
                     title=title,
@@ -115,7 +146,6 @@ class ImportEventsAPIView(APIView):
                     venue=venue,
                     rating=rating,
                     status="DRAFT",
-                    weather=None
                 )
 
                 created_count += 1
@@ -133,7 +163,7 @@ class ImportEventsAPIView(APIView):
     )
         
 class ExportEventsAPIView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
         queryset = Event.objects.all()
@@ -152,6 +182,7 @@ class ExportEventsAPIView(APIView):
             "venue_name",
             "latitude",
             "longitude",
+            'weather',
             "rating",
             "status"
         ]
@@ -168,10 +199,11 @@ class ExportEventsAPIView(APIView):
                 event.venue.latitude if event.venue else "",
                 event.venue.longitude if event.venue else "",
                 event.rating,
-                event.status
+                event.status,
+                event.venue.weather if event.venue else ""
             ])
 
-            response = HttpResponse(content_type='application/vnd.openxmlformat-officedocument.spreadsheetml.sheet',)
+            response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',)
 
             response['Content-Disposition'] = 'attachment; filename=events_export.xlsx'
             workbook.save(response)

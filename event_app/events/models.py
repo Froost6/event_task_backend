@@ -8,6 +8,7 @@ class Venue(models.Model):
     name = models.CharField(max_length=255)
     latitude = models.FloatField() #широта
     longitude = models.FloatField() #долгота
+    weather = models.JSONField(blank=True, null=True)
 
     def __str__(self):
         return self.name
@@ -28,7 +29,7 @@ class Event(models.Model):
     venue = models.ForeignKey(Venue, on_delete=models.CASCADE)
     rating = models.PositiveIntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(25)])
     status = models.CharField(max_length=20, choices=STATUS_CHOISES, default='DRAFT')
-    weather = models.JSONField(blank=True, null=True)
+    
 
     def __str__(self):
         return self.title

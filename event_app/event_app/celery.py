@@ -14,3 +14,7 @@ app.conf.beat_schedule = {
         'schedule': 1800.0,
     }
 }
+
+if os.environ.get('CELERY_TASK_ALWAYS_EAGER') == 'True':
+    app.conf.task_always_eager = True
+    app.conf.task_eager_propagates = True
