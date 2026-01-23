@@ -1,7 +1,7 @@
 import django_filters
 from rest_framework.views import APIView
-from rest_framework import viewsets
-from .models import Venue, Event
+from rest_framework import viewsets, status
+from .models import Venue, Event, EventImage
 from .serializers import VenueSerializer, EventSerializer
 from .filters import EventFilter
 from rest_framework.filters import SearchFilter, OrderingFilter
@@ -44,6 +44,37 @@ class EventViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
+
+class UploadEventImagesAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        event_id = request.data.get('event_id')
+        event = Event.objects.filter(id=event_id).first()
+
+        if not event:
+            return Response({"error": "Событие не найдено"}, status=status.HTTP_404_NOT_FOUND)
+        
+        images = request.FILES.get('images')
+
+        if not images:
+            return Response({"error": "Изображения не переданы"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        event_images = []
+        for image in images:
+            event_image = EventImage.objects.create(event=event, image=image)
+            event_images.append(event_image)
+
+        if event_images:
+            first_image = event_image[0]
+
+            if not first_image.preview:
+                first_image.save()
+        return Response({
+            'message':'Изображения успешно загружены',
+            'images': [image.id for image in event_images]
+        }, status=status.HTTP_201_CREATED)
+        
 
 class ImportEventsAPIView(APIView):
     permission_classes = [IsAdminUser]

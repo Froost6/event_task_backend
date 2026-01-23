@@ -204,13 +204,68 @@ Content-Disposition: attachment; filename=events_export.xlsx
 
 Тело: Excel файл с данными
 
-#  Статусы событий
+# POST /api/events/{event_id}/images/ - загрузка изображения
+Права доступа: авторизованный пользователь
+Загружает одно или несколько изображений для события. Изображения автоматически создают превью-версию размером 200x200px при загрузке. Превью будет связано с первым изображением, а остальные изображения будут добавлены в список изображений события
+
+пример : POST /api/events/1/images/
+
+Тело запроса (Content-Type: multipart/form-data):
+
+{
+    "images": ["image1.jpg", "image2.jpg"]
+}
+
+Ответ:
+
+{
+    "images": [
+        {
+            "id": 1,
+            "image": "http://example.com/media/event_images/image1.jpg",
+            "preview": "http://example.com/media/event_previews/image1_preview.jpg"
+        },
+        {
+            "id": 2,
+            "image": "http://example.com/media/event_images/image2.jpg",
+            "preview": "http://example.com/media/event_previews/image2_preview.jpg"
+        }
+    ]
+}
+
+# GET /api/events/{event_id}/images/ получить изображения 
+
+Права доступа: Все пользователи
+
+Описание: Получает все изображения, связанные с событием, включая превью.
+
+Ответ:
+
+{
+    "images": [
+        {
+            "id": 1,
+            "image": "http://example.com/media/event_images/image1.jpg",
+            "preview": "http://example.com/media/event_previews/image1_preview.jpg"
+        },
+        {
+            "id": 2,
+            "image": "http://example.com/media/event_images/image2.jpg",
+            "preview": "http://example.com/media/event_previews/image2_preview.jpg"
+        }
+    ]
+}
+
+
+
+
+##  Статусы событий
 Статус |	Описание |	Кто видит
 DRAFT	| Черновик |	Только администраторы
 PUBLISHED |	Опубликовано	| Все пользователи
 CANCELLED |	Отменено |	Все пользователи
 
-# Коды ошибок 
+## Коды ошибок 
 
 Код	| Описание
 400	| Неверный запрос (валидация данных)
@@ -224,21 +279,6 @@ CANCELLED |	Отменено |	Все пользователи
 ## 2. Таблица Events содержит в себе:
 • Название
 • Каждое событие может иметь несколько изображений. Изображения автоматически создают превью-версию при загрузке.
-
-    Поля модели:
-
-    event - Связь с событием (ForeignKey)
-
-    image - Основное изображение (загружается в event_images/)
-    *URL: POST /api/events/{event_id}/images/
-    Права доступа: Только администраторы
-    Content-Type: multipart/form-data
-
-    *URL: GET /api/events/{event_id}/images/
-    Права доступа: Все пользователи (в соответствии с правами на событие)
-    Response (200 OK):
-
-    preview - Превью изображение 200x200px (создается автоматически, загружается в event_previews/)
 • Описание
 • Дата и время публикации
 • Дата и время начала проведения

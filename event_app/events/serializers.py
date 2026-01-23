@@ -13,7 +13,7 @@ class EventImageSerializer(serializers.ModelSerializer):
 
 
 class EventSerializer(serializers.ModelSerializer):
-    image = EventImageSerializer(many=True, read_only=True)
+    image = EventImageSerializer(many=True, required = False)
     venue_detail = VenueSerializer(source='venue', read_only=True)
     venue = serializers.PrimaryKeyRelatedField(queryset=Venue.objects.all())
     author = serializers.PrimaryKeyRelatedField(read_only=True)
@@ -25,4 +25,21 @@ class EventSerializer(serializers.ModelSerializer):
             'start_datetime', 'end_datetime', 'author', 'venue_detail',
             'venue', 'rating', 'status', 'image'
         ]
+    
+    def create(self,validated_data):
+        images_data = validated_data.pop('image',[])
+
+        event = Event.objects.create(**validated_data)
+
+        event_images = []
+        for idx,image in enumerate(images_data):
+            image_instance = EventImage.objects.create(**image)
+            event_images.append(image_instance)
+        
+            if idx == 0:
+                image_instance.save()
+
+        event_images.set(event_images)
+
+        return event
 
